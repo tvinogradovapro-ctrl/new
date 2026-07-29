@@ -1,0 +1,2114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Прототип: Искусство учиться + Квиз</title>
+    <style>
+        /* ---------- Глобальные сбросы и базовые стили ---------- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f7f0;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .app {
+            height: 100vh;
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 20px 40px rgba(0, 30, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 8px 12px 12px;
+            margin: 0 auto;
+        }
+
+        .top-bar {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .progress-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 100px;
+        }
+
+        .progress-label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #1e3a1e;
+            white-space: nowrap;
+        }
+
+        .progress-track {
+            flex: 1;
+            height: 6px;
+            background: #e2efe2;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #2b7a2b, #46b846);
+            border-radius: 20px;
+            transition: width 0.3s ease;
+        }
+
+        .score-badge {
+            font-weight: 700;
+            font-size: 15px;
+            color: #1f4f1f;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        .inventory-icons {
+            display: flex;
+            gap: 3px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .item-icon {
+            width: 28px;
+            height: 28px;
+            background: #f0faf0;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 2px 6px rgba(0, 30, 0, 0.08);
+            border: 2px solid #cde0cd;
+            transition: all 0.15s;
+            cursor: default;
+        }
+
+        .item-icon.used {
+            opacity: 0.4;
+            filter: grayscale(1);
+            border-color: #b0c8b0;
+            background: #e8f0e8;
+        }
+
+        .item-icon.empty {
+            opacity: 0.2;
+            border-style: dashed;
+        }
+
+        #sceneContainer {
+            flex: 1;
+            overflow-y: auto;
+            margin: 2px 0 4px;
+            padding: 0 2px;
+            scroll-behavior: smooth;
+        }
+
+        #sceneContainer::-webkit-scrollbar {
+            width: 3px;
+        }
+        #sceneContainer::-webkit-scrollbar-thumb {
+            background: #b8d9b8;
+            border-radius: 10px;
+        }
+
+        .scene-card {
+            background: #fafffa;
+            border-radius: 24px;
+            padding: 12px 12px 12px;
+            box-shadow: 0 4px 12px rgba(0, 30, 0, 0.04);
+            border: 1px solid #dcebd6;
+            height: auto;
+            min-height: 100%;
+        }
+
+        h1, h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f3b1f;
+            margin-bottom: 4px;
+        }
+
+        .subhead {
+            font-size: 14px;
+            color: #2d572d;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .description {
+            background: #f4fcf4;
+            padding: 8px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            line-height: 1.4;
+            color: #1e3a1e;
+            margin-bottom: 10px;
+            border-left: 4px solid #7cb87c;
+        }
+
+        /* ---------- Кнопки и элементы управления ---------- */
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #cde0cd;
+            border-radius: 40px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #1f401f;
+            text-align: left;
+            transition: all 0.15s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-btn:hover {
+            background: #f0faf0;
+            border-color: #6ea86e;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(60, 120, 60, 0.08);
+        }
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: #2b7a2b;
+            border: none;
+            color: white;
+            font-weight: 600;
+            font-size: 15px;
+            padding: 10px 18px;
+            border-radius: 40px;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            margin-top: 6px;
+            box-shadow: 0 4px 0 #1a4f1a;
+        }
+        .btn-primary:hover {
+            background: #327a32;
+        }
+        .btn-primary:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #1a4f1a;
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #1a4f1a;
+            pointer-events: none;
+        }
+
+        .btn-quiz-yellow {
+            background: #f1c40f;
+            border: none;
+            color: #1f3b1f;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 10px 18px;
+            border-radius: 40px;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.15s;
+            margin-top: 6px;
+            box-shadow: 0 4px 0 #d4a017;
+        }
+        .btn-quiz-yellow:hover {
+            background: #e6b800;
+        }
+        .btn-quiz-yellow:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #d4a017;
+        }
+        .btn-quiz-yellow:disabled {
+            opacity: 0.4;
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #d4a017;
+            pointer-events: none;
+        }
+
+        /* ---------- Вспомогательные классы ---------- */
+        .meta-info {
+            margin-top: 4px;
+            font-size: 11px;
+            color: #4a754a;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .gap-small {
+            gap: 4px;
+        }
+        .text-center {
+            text-align: center;
+        }
+
+        /* ---------- Баннеры, сообщения ---------- */
+        .result-banner {
+            background: #e6f5e6;
+            border-radius: 16px;
+            padding: 8px 14px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            border: 1px solid #b8d9b8;
+            font-size: 13px;
+        }
+        .inventory-message {
+            background: #f2faf2;
+            padding: 8px 12px;
+            border-radius: 30px;
+            font-size: 13px;
+            border: 1px dashed #79b079;
+            margin: 6px 0;
+        }
+        .gameover-overlay {
+            background: #fef2f2;
+            border: 2px solid #d97a7a;
+            border-radius: 24px;
+            padding: 14px;
+            text-align: center;
+            margin: 6px 0;
+        }
+        .final-advice {
+            background: #f0faf0;
+            padding: 10px 12px;
+            border-radius: 16px;
+            margin: 8px 0;
+            font-size: 13px;
+            line-height: 1.4;
+            border-left: 4px solid #2b7a2b;
+        }
+
+        /* ---------- Диагностика ---------- */
+        .diagnostic-item {
+            background: #f6fcf6;
+            border-radius: 14px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+        }
+        .diagnostic-item label {
+            font-weight: 500;
+            display: block;
+            margin-bottom: 2px;
+            font-size: 13px;
+        }
+        .diagnostic-item select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 30px;
+            border: 2px solid #cde0cd;
+            background: white;
+            font-size: 13px;
+        }
+
+        /* ---------- Журнал ---------- */
+        .log-container {
+            flex-shrink: 0;
+            max-height: 70px;
+            overflow-y: auto;
+            background: #f6fcf6;
+            border-radius: 16px;
+            padding: 4px 10px;
+            border: 1px solid #dcebd6;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        .log-container::-webkit-scrollbar {
+            width: 3px;
+        }
+        .log-container::-webkit-scrollbar-thumb {
+            background: #b8d9b8;
+            border-radius: 10px;
+        }
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+        .log-title {
+            font-weight: 600;
+            font-size: 11px;
+            color: #1f4f1f;
+        }
+        .log-clear {
+            background: none;
+            border: none;
+            color: #6a8f6a;
+            font-size: 11px;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 20px;
+            transition: 0.1s;
+        }
+        .log-clear:hover {
+            background: #eaf3ea;
+        }
+        .log-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid #eaf3ea;
+            display: flex;
+            gap: 4px;
+            align-items: baseline;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .log-time {
+            color: #6a8f6a;
+            font-size: 10px;
+            min-width: 36px;
+        }
+        .log-text {
+            color: #1f401f;
+            font-size: 12px;
+        }
+
+        /* ---------- Модальные окна ---------- */
+        .feedback-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,20,0,0.3);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            animation: fadeIn 0.25s;
+            padding: 16px;
+        }
+        .feedback-card {
+            background: white;
+            max-width: 400px;
+            width: 100%;
+            border-radius: 40px;
+            padding: 20px 18px 20px;
+            box-shadow: 0 30px 50px rgba(0,20,0,0.3);
+            text-align: center;
+            animation: slideUp 0.3s ease;
+        }
+        .feedback-card.good { border-top: 6px solid #2b7a2b; }
+        .feedback-card.bad { border-top: 6px solid #c94a4a; }
+        .feedback-emoji { font-size: 40px; margin-bottom: 2px; }
+        .feedback-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+        .feedback-desc { font-size: 14px; color: #2d4a2d; line-height: 1.5; text-align: left; }
+        .feedback-btn {
+            margin-top: 12px;
+            background: #2b7a2b;
+            border: none;
+            color: white;
+            font-weight: 600;
+            font-size: 15px;
+            padding: 10px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #1a4f1a;
+            transition: 0.1s;
+        }
+        .feedback-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #1a4f1a; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .item-modal .feedback-card { border-top-color: #2b7a2b; }
+        .item-modal .feedback-desc { text-align: center; font-size: 15px; }
+
+        /* ---------- Квиз-модалка ---------- */
+        .quiz-modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #f0f7f0;
+            z-index: 9999;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .quiz-modal-content {
+            max-width: 480px;
+            width: 100%;
+            background: white;
+            border-radius: 40px;
+            padding: 20px 18px 20px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.4s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .quiz-modal-content h2 { font-size: 20px; text-align: center; margin-bottom: 4px; }
+        .quiz-progress { font-size: 13px; color: #4a754a; margin-bottom: 8px; text-align: center; }
+        .quiz-fact { font-size: 13px; color: #4a754a; margin-bottom: 4px; font-weight: 500; }
+        .quiz-question { font-size: 16px; font-weight: 500; margin-bottom: 10px; line-height: 1.4; }
+        .quiz-option {
+            background: white;
+            border: 3px solid #cde0cd;
+            border-radius: 40px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #1f401f;
+            text-align: left;
+            transition: all 0.15s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            width: 100%;
+        }
+        .quiz-option:hover { background: #f0faf0; border-color: #6ea86e; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(60,120,60,0.08); }
+        .quiz-option:active { transform: scale(0.98); }
+        .quiz-option.disabled { cursor: not-allowed; opacity: 0.8; }
+        .quiz-option.disabled:hover { transform: none; box-shadow: none; }
+        .quiz-option.correct {
+            border: 5px solid #2b7a2b;
+            background: #d4edda;
+            box-shadow: 0 0 0 2px #2b7a2b;
+            cursor: default;
+        }
+        .quiz-option.correct:hover { transform: none; box-shadow: 0 0 0 2px #2b7a2b; }
+        .quiz-option.wrong {
+            border: 5px solid #c94a4a;
+            background: #f8d7da;
+            color: #7a2020;
+            box-shadow: 0 0 0 2px #c94a4a;
+            cursor: default;
+        }
+        .quiz-option.wrong:hover { transform: none; box-shadow: 0 0 0 2px #c94a4a; }
+        .quiz-option.incorrect {
+            border: 3px solid #d0d0d0;
+            background: #f0f0f0;
+            color: #999;
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .quiz-option.incorrect:hover { transform: none; box-shadow: none; }
+        .quiz-explanation {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 14px;
+            border-left: 4px solid #b0b0b0;
+            background: #f4f4f4;
+            font-size: 13px;
+            line-height: 1.4;
+            color: #333;
+        }
+        .quiz-explanation.good { background: #f4fcf4; border-left-color: #7cb87c; color: #1e3a1e; }
+        .quiz-explanation.bad { background: #fbeeee; border-left-color: #c94a4a; color: #5e2020; }
+        .quiz-verdict { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+        .quiz-verdict.good { color: #2b7a2b; }
+        .quiz-verdict.bad { color: #c94a4a; }
+
+        /* ---------- Тосты ---------- */
+        .item-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            color: #1e3a1e;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            z-index: 900;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideUp 0.3s ease;
+            max-width: 90%;
+            border: 1px solid #d0d0d0;
+        }
+        .item-toast span { font-size: 22px; }
+
+        /* ---------- Матрица Эйзенхауэра ---------- */
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin: 8px 0;
+        }
+        .matrix-quadrant {
+            background: #fafffa;
+            border: 2px solid #cde0cd;
+            border-radius: 14px;
+            padding: 6px 4px;
+            min-height: 60px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .matrix-quadrant h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1f3b1f;
+            margin-bottom: 2px;
+            text-align: center;
+        }
+        .matrix-task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .matrix-task {
+            background: #e8f4e8;
+            border-radius: 16px;
+            padding: 3px 8px;
+            font-size: 11px;
+            cursor: grab;
+            transition: all 0.15s;
+            border: 2px solid transparent;
+            color: #1f401f;
+            text-align: center;
+            user-select: none;
+        }
+        .matrix-task:active { cursor: grabbing; }
+        .matrix-task.pool { background: #f4fcf4; border: 2px dashed #b8d9b8; }
+        .matrix-task.pool:hover { background: #e8f4e8; }
+        .matrix-task.placed { background: #eaf3ea; border: 2px solid #b8d9b8; }
+        .matrix-task.placed:hover { background: #dcebd6; }
+        .matrix-task.dragging { opacity: 0.4; }
+        .matrix-pool-area {
+            background: #fafffa;
+            border: 2px dashed #b8d9b8;
+            border-radius: 14px;
+            padding: 6px;
+            margin-bottom: 6px;
+            min-height: 50px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            align-items: center;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .matrix-pool-area .matrix-task { background: #f4fcf4; border: 2px solid #cde0cd; }
+        .matrix-pool-area .matrix-task:hover { background: #e8f4e8; }
+        .matrix-quadrant.drag-over { border-color: #2b7a2b; background: #e8f4e8; }
+        .matrix-pool-area.drag-over { border-color: #2b7a2b; background: #e8f4e8; }
+
+        /* ---------- Планировщик недели ---------- */
+        .week-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+            margin: 6px 0;
+        }
+        .week-day {
+            background: #fafffa;
+            border: 2px solid #cde0cd;
+            border-radius: 8px;
+            padding: 2px 1px;
+            min-height: 44px;
+            text-align: center;
+            font-size: 10px;
+        }
+        .week-day .day-name { font-weight: 600; color: #1f3b1f; margin-bottom: 1px; }
+        .week-day .day-hours {
+            font-size: 9px;
+            color: #4a754a;
+            background: #e8f4e8;
+            border-radius: 12px;
+            padding: 1px 4px;
+            display: inline-block;
+        }
+        .week-day .day-hours.overload { background: #f8d7da; color: #7a2020; font-weight: 600; }
+        .task-item {
+            background: #f4fcf4;
+            border: 1px solid #cde0cd;
+            border-radius: 14px;
+            padding: 4px 8px;
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            flex-wrap: wrap;
+        }
+        .task-item select { margin-left: auto; padding: 1px 3px; border-radius: 14px; border: 2px solid #cde0cd; background: white; font-size: 10px; }
+        .task-item .task-hours { background: #e8f4e8; border-radius: 14px; padding: 1px 6px; font-size: 10px; font-weight: 500; }
+        .task-item .task-deadline { font-size: 9px; color: #6a8f6a; }
+
+        /* ---------- Блокнот техник ---------- */
+        .collect-container { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+        .collect-tech-item {
+            background: #fafffa;
+            border: 2px solid #cde0cd;
+            border-radius: 30px;
+            padding: 4px 10px;
+            cursor: grab;
+            user-select: none;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+            position: relative;
+            font-size: 12px;
+        }
+        .collect-tech-item:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(60,120,60,0.1); }
+        .collect-tech-item.dragging { opacity: 0.4; }
+        .collect-tech-item.added { opacity: 0.5; border-style: dashed; cursor: default; background: #f0f0f0; }
+        .collect-tech-item.added:hover { transform: none; box-shadow: none; }
+        .collect-tech-item .tech-emoji { font-size: 20px; }
+        .collect-tech-item .tech-name { font-size: 12px; color: #1f3b1f; }
+        .collect-tech-item .tech-tip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f3b1f;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 400;
+            white-space: nowrap;
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            z-index: 10;
+        }
+        .collect-tech-item:hover .tech-tip { display: block; }
+        .collect-notebook {
+            background: #fafffa;
+            border: 3px dashed #b8d9b8;
+            border-radius: 20px;
+            padding: 8px;
+            min-height: 60px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .collect-notebook.drag-over { border-color: #2b7a2b; background: #e8f4e8; }
+        .collect-notebook .placeholder { color: #b0c8b0; font-size: 12px; }
+        .collect-notebook .notebook-item {
+            background: #e8f4e8;
+            border-radius: 30px;
+            padding: 3px 10px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #1f3b1f;
+            cursor: context-menu;
+            transition: background 0.15s;
+        }
+        .collect-notebook .notebook-item:hover { background: #d4e8d4; }
+        .collect-notebook .notebook-item .nb-emoji { font-size: 16px; }
+        .collect-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .collect-actions .btn-primary { flex: 1; margin-top: 0; }
+        .collect-actions .btn-clear { background: #8d8d8d; box-shadow: 0 4px 0 #6a6a6a; }
+        .collect-actions .btn-clear:active { box-shadow: 0 1px 0 #6a6a6a; }
+
+        /* ---------- Адаптивность ---------- */
+        @media (max-width: 480px) {
+            .app { padding: 6px 8px 8px; border-radius: 0; max-width: 100%; height: 100vh; }
+            .top-bar { margin-bottom: 2px; gap: 3px; }
+            .progress-wrapper { gap: 3px; }
+            .progress-label { font-size: 11px; }
+            .score-badge { font-size: 13px; min-width: 28px; }
+            .item-icon { width: 24px; height: 24px; font-size: 14px; }
+            #sceneContainer { margin: 1px 0 2px; }
+            .scene-card { padding: 8px 8px 8px; border-radius: 16px; }
+            h1, h2 { font-size: 16px; margin-bottom: 2px; }
+            .subhead { font-size: 12px; margin-bottom: 4px; }
+            .description { font-size: 12px; padding: 6px 10px; margin-bottom: 6px; }
+            .option-btn { font-size: 12px; padding: 8px 12px; }
+            .btn-primary, .btn-quiz-yellow { font-size: 13px; padding: 8px 14px; }
+            .log-container { max-height: 60px; font-size: 11px; padding: 4px 8px; }
+            .log-text { font-size: 11px; }
+            .feedback-card { padding: 16px 14px; }
+            .feedback-emoji { font-size: 36px; }
+            .feedback-title { font-size: 18px; }
+            .feedback-desc { font-size: 13px; }
+            .quiz-modal-content { padding: 16px 14px; }
+            .quiz-question { font-size: 15px; }
+            .quiz-option { font-size: 12px; padding: 8px 12px; }
+            .matrix-grid { gap: 4px; }
+            .matrix-quadrant { padding: 4px; min-height: 50px; }
+            .matrix-quadrant h4 { font-size: 10px; }
+            .matrix-task { font-size: 9px; padding: 2px 6px; }
+            .week-grid { gap: 2px; }
+            .week-day { min-height: 34px; padding: 1px; }
+            .week-day .day-name { font-size: 9px; }
+            .week-day .day-hours { font-size: 8px; }
+            .task-item { font-size: 10px; padding: 3px 6px; }
+            .task-item select { font-size: 9px; }
+            .collect-tech-item { font-size: 11px; padding: 3px 8px; }
+            .collect-notebook { min-height: 50px; padding: 6px; }
+            .collect-notebook .notebook-item { font-size: 11px; padding: 2px 8px; }
+            .collect-actions .btn-primary { font-size: 12px; padding: 6px 10px; }
+        }
+
+        @media (max-width: 380px) {
+            .app { padding: 4px 4px 4px; }
+            .scene-card { padding: 6px 4px 6px; }
+            h1, h2 { font-size: 14px; }
+            .description { font-size: 11px; padding: 4px 8px; }
+            .option-btn { font-size: 11px; padding: 6px 10px; }
+            .btn-primary, .btn-quiz-yellow { font-size: 12px; padding: 6px 10px; }
+            .log-container { max-height: 50px; }
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <div class="top-bar">
+        <div class="progress-wrapper">
+            <span class="progress-label">⚡</span>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill" style="width:0%"></div>
+            </div>
+            <span class="score-badge" id="scoreDisplay">0</span>
+        </div>
+        <div class="inventory-icons" id="inventoryContainer"></div>
+    </div>
+
+    <div id="sceneContainer"></div>
+
+    <div class="log-container" id="logContainer">
+        <div class="log-header">
+            <span class="log-title">📜 Журнал</span>
+            <button class="log-clear" id="clearLogBtn">Очистить</button>
+        </div>
+        <div id="logEntries"></div>
+    </div>
+</div>
+
+<script>
+    // ---------- ВОПРОСЫ КВИЗА ----------
+    const QUIZ_QUESTIONS = [
+        {
+            fact: "Метод «Зеленого маркера» и жесткое делегирование",
+            text: "Этот выдающийся лидер управлял расписанием с помощью жесткой фильтрации. Он ввел систему, при которой секретари делили почту на три категории: «Сделать немедленно», «Передать подчиненным», «В корзину». Также требовал, чтобы отчеты умещались на одной странице.",
+            options: ["Уинстон Черчилль", "Дуайт Эйзенхауэр", "Бенджамин Франклин", "Наполеон Бонапарт"],
+            correct: 1,
+            explanation: "Дуайт Эйзенхауэр (генерал и 34-й президент США) оставил в наследство мировой практике не только знаменитую «Матрицу Эйзенхауэра», но и жесткие стандарты работы с информацией, которые сегодня активно применяются в корпоративном менеджменте."
+        },
+        {
+            fact: "Ранний подъем в 4:30 утра и правило «Пять минут»",
+            text: "Этот всемирно известный генеральный директор просыпается в 3:45–4:30 утра, успевает потренироваться, ответить на сотни писем клиентов. Его рабочий день расписан с точностью до минут, встречи длятся строго 15 или 30 минут.",
+            options: ["Стив Джобс", "Илон Маск", "Тим Кук", "Джефф Безос"],
+            correct: 2,
+            explanation: "Тим Кук известен своей невероятной дисциплиной. Он приходит в офис задолго до появления сотрудников и использует утренние часы для максимальной концентрации в тишине."
+        },
+        {
+            fact: "Строгий учет 24 часов с помощью «Морального дневника»",
+            text: "Один из отцов-основателей США разработал детальную систему самосовершенствования и тайм-менеджмента, которую вел всю жизнь. Его день был разбит на блоки по 2 часа. Каждое утро он спрашивал себя: «Что я хорошего сделаю сегодня?», а вечером: «Что я сегодня сделал?»",
+            options: ["Джордж Вашингтон", "Томас Джефферсон", "Бенджамин Франклин", "Авраам Линкольн"],
+            correct: 2,
+            explanation: "Бенджамин Франклин в своей «Автобиографии» описал детальный распорядок дня, где на сон отводилось ровно 6 часов, на работу – 8 часов, а остальное время делилось на прием пищи, учебу и самоанализ."
+        },
+        {
+            fact: "Правило «Свободного времени от звонков» и ультра-фокус",
+            text: "Этот выдающийся изобретатель и предприниматель разделил свою рабочую неделю между несколькими компаниями, выделив под каждую четкие дни. Для защиты личного времени использовал жесткий фильтр доступности, минимизируя незапланированные совещания.",
+            options: ["Билл Гейтс", "Илон Маск", "Марк Цукерберг", "Ричард Брэнсон"],
+            correct: 1,
+            explanation: "Илон Маск известен своим принципом «никаких неожиданных звонков» и подходом к управлению через жесткое распределение фокуса внимания между своими масштабными проектами (SpaceX, Tesla, xAI)."
+        }
+    ];
+
+    // ---------- СОСТОЯНИЕ ----------
+    const state = {
+        score: 0,
+        inventory: [],
+        currentScene: 'cover',
+        usedItems: new Set(),
+        gameOver: false,
+        processing: false,
+        history: [],
+        quizIndex: 0,
+        quizScore: 0,
+        quizCorrectCount: 0,
+        previousScene: null,
+        quizAnswered: false,
+        quizSelected: null,
+        quizUsed: false,
+    };
+
+    const ITEMS = {
+        'timer': {
+            id: 'timer',
+            name: 'Таймер-помидор',
+            emoji: '🍅',
+            desc: '"Метод Pomodoro": 25 минут работы, 5 минут отдыха. Повышает фокус и снижает усталость. Идеально для тех, кто хочет работать как робот, но с перерывами на кофе.'
+        },
+        'tracker': {
+            id: 'tracker',
+            name: 'Трекер привычек',
+            emoji: '📋',
+            desc: 'Визуализируй прогресс каждый день – укрепляет мотивацию и помогает не сбиваться. Заодно видно, сколько раз ты откладывал дела на потом.'
+        },
+        'diary': {
+            id: 'diary',
+            name: 'Ежедневник',
+            emoji: '📓',
+            desc: 'Записывай мысли, планы и рефлексию – освобождает ум и укрепляет память. А если забудешь, что записал, то хотя бы бумагу используешь.'
+        },
+        'partner': {
+            id: 'partner',
+            name: 'Партнёр по обучению',
+            emoji: '🤝',
+            desc: 'Общайся, делись опытом – социальная поддержка ускоряет прогресс. Особенно когда ты уже готов всё бросить, а друг говорит «давай ещё разок».'
+        },
+        'matrix': {
+            id: 'matrix',
+            name: 'Матрица Эйзенхауэра',
+            emoji: '📊',
+            desc: 'Приоритизируй задачи по важности и срочности – фокусируйся на главном. Как будто раскладываешь игрушки по коробкам, только полезно.'
+        }
+    };
+
+    // ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
+    function updateUI() {
+        const clamped = Math.min(100, Math.max(0, state.score));
+        document.getElementById('progressFill').style.width = clamped + '%';
+        document.getElementById('scoreDisplay').textContent = Math.floor(state.score);
+
+        const container = document.getElementById('inventoryContainer');
+        container.innerHTML = '';
+        const allItemIds = ['timer', 'tracker', 'diary', 'partner', 'matrix'];
+        const sorted = [...state.inventory];
+        allItemIds.forEach(id => {
+            if (!sorted.find(i => i.id === id)) {
+                sorted.push({ id, empty: true });
+            }
+        });
+        sorted.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'item-icon';
+            if (item.empty) {
+                div.classList.add('empty');
+                div.textContent = '○';
+            } else {
+                const used = state.usedItems.has(item.id);
+                if (used) div.classList.add('used');
+                div.textContent = item.emoji || '📦';
+                div.title = item.name + (used ? ' (использован)' : '');
+            }
+            container.appendChild(div);
+        });
+        renderLog();
+    }
+
+    function addHistory(text) {
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        state.history.unshift({ text, timestamp });
+        if (state.history.length > 50) state.history.pop();
+        renderLog();
+    }
+
+    function renderLog() {
+        const container = document.getElementById('logEntries');
+        if (!container) return;
+        container.innerHTML = state.history.map(entry =>
+            `<div class="log-entry">
+                <span class="log-time">${entry.timestamp}</span>
+                <span class="log-text">${entry.text}</span>
+            </div>`
+        ).join('');
+    }
+
+    // Модальное окно для получения предмета
+    function showItemModal(itemId) {
+        const item = ITEMS[itemId];
+        if (!item) return Promise.resolve();
+        if (state.inventory.find(i => i.id === itemId)) return Promise.resolve();
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'feedback-modal item-modal';
+            modal.innerHTML = `
+                <div class="feedback-card good">
+                    <div class="feedback-emoji">${item.emoji}</div>
+                    <div class="feedback-title">+ ${item.name}</div>
+                    <div class="feedback-desc">${item.desc}</div>
+                    <button class="feedback-btn" id="itemModalOk">Отлично!</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.getElementById('itemModalOk').addEventListener('click', () => {
+                modal.remove();
+                resolve();
+            });
+        });
+    }
+
+    async function addItemIfMissing(itemId, reasonForLog) {
+        if (state.inventory.find(i => i.id === itemId)) return false;
+        await showItemModal(itemId);
+        state.inventory.push({ ...ITEMS[itemId], used: false });
+        if (reasonForLog) {
+            addHistory(`🎁 Получен предмет: ${ITEMS[itemId].emoji} ${ITEMS[itemId].name} (${reasonForLog})`);
+        } else {
+            addHistory(`🎁 Получен предмет: ${ITEMS[itemId].emoji} ${ITEMS[itemId].name}`);
+        }
+        updateUI();
+        return true;
+    }
+
+    function addItemToNotebook(itemId) {
+        if (state.inventory.find(i => i.id === itemId)) return false;
+        state.inventory.push({ ...ITEMS[itemId], used: false });
+        addHistory(`📒 Добавлено в блокнот: ${ITEMS[itemId].emoji} ${ITEMS[itemId].name}`);
+        updateUI();
+        return true;
+    }
+
+    function showTechInfoModal(techId) {
+        const item = ITEMS[techId];
+        if (!item) return;
+        const modal = document.createElement('div');
+        modal.className = 'feedback-modal';
+        modal.innerHTML = `
+            <div class="feedback-card good">
+                <div class="feedback-emoji">${item.emoji}</div>
+                <div class="feedback-title">${item.name}</div>
+                <div class="feedback-desc">${item.desc}</div>
+                <button class="feedback-btn" id="techInfoOk">ОК</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('techInfoOk').addEventListener('click', () => {
+            modal.remove();
+        });
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+    }
+
+    function showFeedback(isGood, emoji, title, desc, callback) {
+        if (state.processing) return;
+        state.processing = true;
+        const modal = document.createElement('div');
+        modal.className = 'feedback-modal';
+        modal.innerHTML = `
+            <div class="feedback-card ${isGood ? 'good' : 'bad'}">
+                <div class="feedback-emoji">${emoji}</div>
+                <div class="feedback-title">${title}</div>
+                <div class="feedback-desc">${desc}</div>
+                <button class="feedback-btn" id="feedbackOk">Продолжить</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('feedbackOk').addEventListener('click', () => {
+            modal.remove();
+            state.processing = false;
+            if (callback) callback();
+        });
+    }
+
+    function addScore(delta, reason, callbackAfter = null) {
+        if (state.processing) return false;
+        let newScore = Math.min(100, Math.max(0, state.score + delta));
+
+        if (delta < 0 && newScore === 0 && state.inventory.filter(it => !state.usedItems.has(it.id)).length > 0) {
+            const available = state.inventory.filter(it => !state.usedItems.has(it.id));
+            if (available.length > 0) {
+                const item = available[0];
+                state.usedItems.add(item.id);
+                newScore = Math.min(100, newScore + 20);
+                const toast = document.createElement('div');
+                toast.className = 'item-toast';
+                toast.innerHTML = `⚠️ Использован ${item.emoji} ${item.name} (+20 баллов) – ты остаёшься в игре!`;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+                addHistory(`🔄 Автоматически использован ${item.emoji} ${item.name} (+20 баллов)`);
+                showFeedback(false, '🔄', 'Предмет активирован!',
+                    `Автоматически использован ${item.emoji} ${item.name}, добавлено 20 баллов.`,
+                    () => {
+                        state.score = newScore;
+                        updateUI();
+                        if (callbackAfter) callbackAfter();
+                    }
+                );
+                state.score = newScore;
+                updateUI();
+                return true;
+            }
+        }
+
+        if (delta < 0 && newScore === 0 && state.inventory.filter(it => !state.usedItems.has(it.id)).length === 0) {
+            state.score = 0;
+            state.gameOver = true;
+            state.previousScene = state.currentScene;
+            updateUI();
+            renderScene('gameover');
+            addHistory(`💔 Игра окончена – баллы на нуле, предметов нет`);
+            return false;
+        }
+
+        state.score = newScore;
+        updateUI();
+        if (delta !== 0) {
+            const sign = delta > 0 ? '+' : '';
+            addHistory(`${delta > 0 ? '✅' : '❌'} ${sign}${delta} баллов (${reason})`);
+            const el = document.createElement('div');
+            el.style.position = 'fixed';
+            el.style.top = '30%';
+            el.style.left = '50%';
+            el.style.transform = 'translateX(-50%)';
+            el.style.fontSize = '36px';
+            el.style.fontWeight = 'bold';
+            el.style.color = delta > 0 ? '#1f8b1f' : '#b33c3c';
+            el.style.background = 'rgba(255,255,255,0.9)';
+            el.style.padding = '8px 24px';
+            el.style.borderRadius = '40px';
+            el.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
+            el.style.zIndex = '999';
+            el.textContent = (delta > 0 ? '+' : '') + delta;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+        if (callbackAfter) callbackAfter();
+        return true;
+    }
+
+    function resetGame() {
+        state.score = 0;
+        state.inventory = [];
+        state.usedItems = new Set();
+        state.gameOver = false;
+        state.currentScene = 'cover';
+        state.processing = false;
+        state.history = [];
+        state.quizIndex = 0;
+        state.quizScore = 0;
+        state.quizCorrectCount = 0;
+        state.previousScene = null;
+        state.quizAnswered = false;
+        state.quizSelected = null;
+        state.quizUsed = false;
+        updateUI();
+        renderScene('cover');
+        addHistory('🔄 Игра сброшена. Начни заново!');
+    }
+
+    // ---------- РЕНДЕРИНГ КВИЗА В ОТДЕЛЬНОМ ОКНЕ ----------
+    function renderQuizModal() {
+        const existing = document.getElementById('quizModalOverlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'quizModalOverlay';
+        overlay.className = 'quiz-modal-overlay';
+        document.body.appendChild(overlay);
+
+        function renderQuestion() {
+            const q = QUIZ_QUESTIONS[state.quizIndex];
+            if (!q) {
+                renderResult();
+                return;
+            }
+            const total = QUIZ_QUESTIONS.length;
+            const current = state.quizIndex + 1;
+            const answered = state.quizAnswered;
+            const isCorrect = answered && state.quizSelected === q.correct;
+
+            const optionsHtml = q.options.map((opt, idx) => {
+                let cls = 'quiz-option';
+                if (answered) {
+                    cls += ' disabled';
+                    if (idx === q.correct) cls += ' correct';
+                    else if (idx === state.quizSelected) cls += ' wrong';
+                    else cls += ' incorrect';
+                }
+                return `<button class="${cls}" data-index="${idx}" ${answered ? 'disabled' : ''}>${String.fromCharCode(65 + idx)}. ${opt}</button>`;
+            }).join('');
+
+            const feedbackHtml = answered ? `
+                <div class="quiz-explanation ${isCorrect ? 'good' : 'bad'}">
+                    <div class="quiz-verdict ${isCorrect ? 'good' : 'bad'}">${isCorrect ? '✅ Верно · +5 баллов' : '❌ Неверно · 0 баллов'}</div>
+                    ${q.explanation}
+                </div>
+                <button class="btn-primary" id="quizNextBtn">Продолжить</button>
+            ` : '';
+
+            overlay.innerHTML = `
+                <div class="quiz-modal-content">
+                    <h2>🧠 Квиз: Тайм-менеджмент великих людей</h2>
+                    <div class="quiz-progress">Вопрос ${current} из ${total}</div>
+                    <div class="quiz-fact">${q.fact}</div>
+                    <div class="quiz-question">${q.text}</div>
+                    <div class="options" id="quizOptions">
+                        ${optionsHtml}
+                    </div>
+                    ${feedbackHtml}
+                </div>
+            `;
+
+            if (!answered) {
+                overlay.querySelectorAll('.quiz-option').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (state.quizAnswered) return;
+                        const idx = parseInt(e.currentTarget.dataset.index);
+                        state.quizSelected = idx;
+                        state.quizAnswered = true;
+                        if (idx === q.correct) {
+                            state.quizScore += 5;
+                            state.quizCorrectCount++;
+                            addHistory(`✅ Квиз: правильный ответ (+5 баллов)`);
+                        } else {
+                            addHistory(`❌ Квиз: неправильный ответ (0 баллов)`);
+                        }
+                        updateUI();
+                        renderQuestion();
+                    });
+                });
+            } else {
+                overlay.querySelector('#quizNextBtn')?.addEventListener('click', () => {
+                    state.quizIndex++;
+                    state.quizAnswered = false;
+                    state.quizSelected = null;
+                    if (state.quizIndex >= QUIZ_QUESTIONS.length) {
+                        renderResult();
+                    } else {
+                        renderQuestion();
+                    }
+                });
+            }
+        }
+
+        function renderResult() {
+            const earned = state.quizScore;
+            const correct = state.quizCorrectCount;
+            const total = QUIZ_QUESTIONS.length;
+            overlay.innerHTML = `
+                <div class="quiz-modal-content">
+                    <h2>📊 Результат квиза</h2>
+                    <div class="result-banner"><span>🏆</span> Ты набрал <strong>${earned}</strong> баллов!</div>
+                    <div class="description">Правильных ответов: ${correct} из ${total}</div>
+                    <button class="btn-primary" id="quizFinishBtn">Завершить и продолжить</button>
+                </div>
+            `;
+            document.getElementById('quizFinishBtn')?.addEventListener('click', () => {
+                overlay.remove();
+                state.score += state.quizScore;
+                state.gameOver = false;
+                state.quizUsed = true;
+                addHistory(`📚 Квиз завершён: +${state.quizScore} баллов к общему счёту`);
+                const prev = state.previousScene || 'chapter1';
+                state.currentScene = prev;
+                state.previousScene = null;
+                if (state.score === 0 && state.inventory.filter(it => !state.usedItems.has(it.id)).length === 0) {
+                    state.gameOver = true;
+                    renderScene('gameover');
+                } else {
+                    renderScene(prev);
+                }
+                updateUI();
+            });
+        }
+
+        state.quizIndex = 0;
+        state.quizScore = 0;
+        state.quizCorrectCount = 0;
+        state.quizAnswered = false;
+        state.quizSelected = null;
+        renderQuestion();
+    }
+
+    // ---------- РЕНДЕРИНГ СЦЕН ----------
+    function renderScene(sceneId, extra = {}) {
+        const container = document.getElementById('sceneContainer');
+        if (state.gameOver && sceneId !== 'gameover') {
+            sceneId = 'gameover';
+        }
+
+        switch (sceneId) {
+            case 'cover':
+                container.innerHTML = `
+                    <div class="scene-card">
+                        <h1>🧘 Искусство учиться</h1>
+                        <div class="subhead">Сила маленьких привычек</div>
+                        <div class="description">Путь к изменениям через микро-привычки. Пройди диагностику, прими решения в семи сценах и набери баллы привычек.</div>
+                        <button class="btn-primary" id="btnStart">Начать</button>
+                        <div class="meta-info">⚡ 0–100 баллов · инвентарь помогает при обнулении</div>
+                    </div>
+                `;
+                document.getElementById('btnStart')?.addEventListener('click', () => {
+                    state.currentScene = 'intro';
+                    renderScene('intro');
+                });
+                break;
+            case 'intro':
+                container.innerHTML = `
+                    <div class="scene-card">
+                        <h2>📊 Механика прогресса</h2>
+                        <div class="subhead">Счётчик баллов привычек</div>
+                        <div class="description">Твои решения влияют на баллы. При достижении 0 – автоматически используется предмет из инвентаря (+20 баллов). Если предметов нет – игра предлагает пройти квиз или начать заново.</div>
+                        <button class="btn-primary" id="btnDiag">Пройти диагностику</button>
+                    </div>
+                `;
+                document.getElementById('btnDiag')?.addEventListener('click', () => {
+                    state.currentScene = 'diagnostic';
+                    renderScene('diagnostic');
+                });
+                break;
+            case 'diagnostic': {
+                const qs = [
+                    { label: 'Как часто ты учишь что-то новое?', options: ['Никогда', 'Иногда', 'Часто', 'Всегда'], scores: [0, 5, 10, 15] },
+                    { label: 'Сколько времени готов уделять в день самопознанию?', options: ['0 мин', '10 мин', '20 мин', '30+ мин'], scores: [0, 5, 10, 15] },
+                    { label: 'Тебе сложно внедрять новые привычки?', options: ['Да', 'Нет'], scores: [0, 10] },
+                    { label: 'Есть ли у тебя поддержка или мотивация извне?', options: ['Нет', 'Да'], scores: [0, 10] },
+                ];
+                let html = `<div class="scene-card"><h2>📝 Диагностика</h2><div class="subhead">4 вопроса</div>`;
+                qs.forEach((q, idx) => {
+                    html += `<div class="diagnostic-item"><label>${q.label}</label><select id="diag${idx}">`;
+                    q.options.forEach((opt, oi) => {
+                        html += `<option value="${oi}">${opt}</option>`;
+                    });
+                    html += `</select></div>`;
+                });
+                html += `<button class="btn-primary" id="diagSubmit">Узнать результат</button></div>`;
+                container.innerHTML = html;
+                document.getElementById('diagSubmit')?.addEventListener('click', async () => {
+                    const answers = [0, 1, 2, 3].map(i => {
+                        const sel = document.getElementById('diag' + i);
+                        return parseInt(sel?.value || 0);
+                    });
+                    const scores = [
+                        [0, 5, 10, 15],
+                        [0, 5, 10, 15],
+                        [0, 10],
+                        [0, 10]
+                    ];
+                    let total = 0;
+                    answers.forEach((val, idx) => {
+                        total += scores[idx][val] || 0;
+                    });
+                    state.score = total;
+                    let itemId = 'timer';
+                    if (total >= 16 && total <= 36) itemId = 'tracker';
+                    else if (total >= 37) itemId = 'diary';
+                    if (!state.inventory.find(i => i.id === itemId)) {
+                        await addItemIfMissing(itemId, 'по результатам диагностики');
+                    }
+                    addHistory(`📊 Диагностика: набрано ${total} баллов`);
+                    state.currentScene = 'result';
+                    renderScene('result', { score: total, item: itemId });
+                });
+                break;
+            }
+            case 'result': {
+                const score = state.score;
+                const itemId = extra.item || 'timer';
+                const item = ITEMS[itemId];
+                container.innerHTML = `
+                    <div class="scene-card">
+                        <h2>🎯 Результат диагностики</h2>
+                        <div class="result-banner"><span>🏆</span> <span>Баллов: <strong>${score}</strong></span></div>
+                        <div class="inventory-message">📦 Получен предмет: ${item ? item.emoji + ' ' + item.name : 'Таймер-помидор'}</div>
+                        <div class="description">Теперь тебя ждут семь сцен. Принимай решения и набирай баллы привычек!</div>
+                        <button class="btn-primary" id="btnChapter1">Начать</button>
+                    </div>
+                `;
+                document.getElementById('btnChapter1')?.addEventListener('click', () => {
+                    state.currentScene = 'chapter1';
+                    renderScene('chapter1');
+                });
+                break;
+            }
+
+            /* ---------- Матрица Эйзенхауэра ---------- */
+            case 'matrix': {
+                const tasks = [
+                    { id: 0, text: '📄 Срочный отчёт для заказчика (дедлайн сегодня)', correct: 0 },
+                    { id: 1, text: '📊 Планирование квартальной стратегии', correct: 1 },
+                    { id: 2, text: '📄 Получить справку для бассейна до конца недели', correct: 2 },
+                    { id: 3, text: '📱 Просмотр новостей в соцсетях', correct: 3 }
+                ];
+
+                let taskPlacement = new Array(tasks.length).fill(-1);
+
+                function renderMatrix() {
+                    const quadrantLabels = [
+                        '🔥 Важно и срочно',
+                        '📌 Важно, но не срочно',
+                        '⚡ Не важно, но срочно',
+                        '📭 Не важно и не срочно'
+                    ];
+
+                    const poolTasks = tasks.filter((t, idx) => taskPlacement[idx] === -1);
+                    const quadrantTasks = [0, 1, 2, 3].map(q => tasks.filter((t, idx) => taskPlacement[idx] === q));
+
+                    let html = `
+                        <div class="scene-card">
+                            <h2>📋 Матрица Эйзенхауэра</h2>
+                            <div class="subhead">Перетащи задачи из пула в подходящие квадраты</div>
+                            <div class="description">Попробуй распределить все 4 задачи. Если ошибёшься – получишь пояснение.</div>
+                            <div style="margin-bottom:4px; font-weight:500; font-size:12px;">📦 Пул задач (перетащи отсюда):</div>
+                            <div class="matrix-pool-area" id="matrixPool">
+                    `;
+                    if (poolTasks.length === 0) {
+                        html += `<span style="color:#6a8f6a;">Все задачи распределены</span>`;
+                    } else {
+                        poolTasks.forEach(t => {
+                            html += `<div class="matrix-task pool" draggable="true" data-task-id="${t.id}">${t.text}</div>`;
+                        });
+                    }
+                    html += `</div>`;
+
+                    html += `<div class="matrix-grid">`;
+                    quadrantLabels.forEach((label, q) => {
+                        html += `<div class="matrix-quadrant" data-quadrant="${q}">
+                            <h4>${label}</h4>
+                            <div class="matrix-task-list">`;
+                        const tasksInQuadrant = quadrantTasks[q];
+                        if (tasksInQuadrant.length === 0) {
+                            html += `<span style="color:#b0c8b0; font-size:10px;">(перетащи сюда)</span>`;
+                        } else {
+                            tasksInQuadrant.forEach(t => {
+                                html += `<div class="matrix-task placed" draggable="true" data-task-id="${t.id}">${t.text}</div>`;
+                            });
+                        }
+                        html += `</div></div>`;
+                    });
+                    html += `</div>`;
+
+                    html += `
+                        <div style="display:flex; gap:6px; margin-top:6px;">
+                            <button class="btn-primary" id="matrixCheckBtn" style="flex:2;">Проверить</button>
+                            <button class="btn-primary" id="matrixResetBtn" style="flex:1; background:#8d8d8d; box-shadow:0 4px 0 #6a6a6a;">Сбросить</button>
+                        </div>
+                        <div style="margin-top:4px; font-size:11px; color:#4a754a;">За каждую ошибку −10 баллов, за всё правильно +20.</div>
+                    </div>
+                    `;
+                    container.innerHTML = html;
+
+                    const tasksElements = document.querySelectorAll('.matrix-task');
+                    const quadrants = document.querySelectorAll('.matrix-quadrant');
+                    const pool = document.getElementById('matrixPool');
+
+                    tasksElements.forEach(el => {
+                        el.addEventListener('dragstart', (e) => {
+                            e.dataTransfer.setData('text/plain', el.dataset.taskId);
+                            el.classList.add('dragging');
+                        });
+                        el.addEventListener('dragend', (e) => {
+                            el.classList.remove('dragging');
+                        });
+                    });
+
+                    const dropTargets = [...quadrants, pool];
+                    dropTargets.forEach(target => {
+                        target.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            target.classList.add('drag-over');
+                        });
+                        target.addEventListener('dragleave', (e) => {
+                            target.classList.remove('drag-over');
+                        });
+                    });
+
+                    quadrants.forEach(quad => {
+                        quad.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            quad.classList.remove('drag-over');
+                            const taskId = parseInt(e.dataTransfer.getData('text/plain'));
+                            if (isNaN(taskId)) return;
+                            const quadrant = parseInt(quad.dataset.quadrant);
+                            taskPlacement[taskId] = quadrant;
+                            renderMatrix();
+                        });
+                    });
+
+                    pool.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        pool.classList.remove('drag-over');
+                        const taskId = parseInt(e.dataTransfer.getData('text/plain'));
+                        if (isNaN(taskId)) return;
+                        taskPlacement[taskId] = -1;
+                        renderMatrix();
+                    });
+
+                    document.getElementById('matrixCheckBtn')?.addEventListener('click', () => {
+                        const allPlaced = taskPlacement.every(p => p !== -1);
+                        if (!allPlaced) {
+                            showFeedback(false, '⚠️', 'Не все задачи распределены',
+                                'Перетащи все задачи из пула в квадраты.', null);
+                            return;
+                        }
+                        let errors = 0;
+                        let details = [];
+                        tasks.forEach((t, idx) => {
+                            const placed = taskPlacement[idx];
+                            if (placed !== t.correct) {
+                                errors++;
+                                const correctLabel = ['Важно и срочно', 'Важно, но не срочно', 'Не важно, но срочно', 'Не важно и не срочно'][t.correct];
+                                const placedLabel = ['Важно и срочно', 'Важно, но не срочно', 'Не важно, но срочно', 'Не важно и не срочно'][placed];
+                                details.push(`«${t.text}» должно быть в «${correctLabel}», а ты поместил в «${placedLabel}».`);
+                            }
+                        });
+
+                        let delta = 0;
+                        let isGood = true;
+                        let feedbackTitle = '';
+                        let feedbackDesc = '';
+                        if (errors === 0) {
+                            delta = 20;
+                            isGood = true;
+                            feedbackTitle = '🎉 Отлично!';
+                            feedbackDesc = 'Ты правильно распределил все задачи. Ты умеешь отличать важное от срочного! +20 баллов.';
+                            addHistory(`✅ Матрица Эйзенхауэра: все верно (+20 баллов)`);
+                        } else {
+                            delta = -errors * 10;
+                            isGood = false;
+                            feedbackTitle = `❌ Ошибок: ${errors}`;
+                            feedbackDesc = `Ты допустил ${errors} ошибок. ${details.join(' ')} За каждую ошибку снимается 10 баллов.`;
+                            addHistory(`❌ Матрица Эйзенхауэра: ${errors} ошибок (${delta} баллов)`);
+                        }
+
+                        showFeedback(isGood, isGood ? '🌟' : '⚠️', feedbackTitle, feedbackDesc, () => {
+                            addScore(delta, `Матрица Эйзенхауэра (${errors} ошибок)`, () => {
+                                state.currentScene = 'chapter3';
+                                renderScene('chapter3');
+                            });
+                        });
+                    });
+
+                    document.getElementById('matrixResetBtn')?.addEventListener('click', () => {
+                        taskPlacement.fill(-1);
+                        renderMatrix();
+                        addHistory(`🔄 Сброс матрицы Эйзенхауэра`);
+                    });
+                }
+
+                renderMatrix();
+                break;
+            }
+
+            /* ---------- Планировщик недели ---------- */
+            case 'weekPlanning': {
+                const tasksData = [
+                    { id: 0, name: 'Подготовка презентации', hours: 3, deadline: 3 },
+                    { id: 1, name: 'Написание отчёта', hours: 4, deadline: 5 },
+                    { id: 2, name: 'Встреча с командой', hours: 2, deadline: 2 },
+                    { id: 3, name: 'Анализ конкурентов', hours: 5, deadline: 4 },
+                    { id: 4, name: 'Обучение новому софту', hours: 2, deadline: 6 },
+                    { id: 5, name: 'Планирование бюджета', hours: 3, deadline: 7 },
+                    { id: 6, name: 'Ответы на письма', hours: 1, deadline: 1 },
+                    { id: 7, name: 'Разработка дизайна', hours: 4, deadline: 5 },
+                    { id: 8, name: 'Тестирование продукта', hours: 3, deadline: 6 },
+                    { id: 9, name: 'Подготовка к совещанию', hours: 2, deadline: 2 }
+                ];
+
+                let selectedDays = new Array(tasksData.length).fill(0);
+
+                function renderWeekPlanning() {
+                    const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+                    let dayHours = new Array(7).fill(0);
+                    tasksData.forEach((task, idx) => {
+                        const day = selectedDays[idx];
+                        if (day > 0 && day <= 7) {
+                            dayHours[day - 1] += task.hours;
+                        }
+                    });
+
+                    let html = `
+                        <div class="scene-card">
+                            <h2>📅 Планирование недели</h2>
+                            <div class="subhead">Распредели задачи по дням, чтобы не перегружать себя</div>
+                            <div class="description">Для каждой задачи выбери день выполнения. Старайся не превышать 10 часов в день. Учитывай дедлайны.</div>
+                            <div style="margin-bottom:4px;">
+                                <div style="font-weight:600; margin-bottom:2px; font-size:12px;">📊 Сводка по дням:</div>
+                                <div class="week-grid">
+                    `;
+                    for (let d = 0; d < 7; d++) {
+                        const hours = dayHours[d];
+                        const overload = hours > 10;
+                        html += `
+                            <div class="week-day">
+                                <div class="day-name">${days[d]}</div>
+                                <div class="day-hours ${overload ? 'overload' : ''}">${hours} ч</div>
+                            </div>
+                        `;
+                    }
+                    html += `</div></div>`;
+
+                    html += `<div style="font-weight:600; margin-bottom:2px; font-size:12px;">📋 Задачи:</div>`;
+                    tasksData.forEach((task, idx) => {
+                        const day = selectedDays[idx];
+                        const deadline = task.deadline;
+                        html += `
+                            <div class="task-item">
+                                <span>${task.name}</span>
+                                <span class="task-hours">${task.hours} ч</span>
+                                <span class="task-deadline">Дедлайн: ${days[deadline - 1]}</span>
+                                <select data-task-idx="${idx}">
+                                    <option value="0">—</option>
+                                    ${days.map((d, i) => `<option value="${i + 1}" ${day === i + 1 ? 'selected' : ''}>${d}</option>`).join('')}
+                                </select>
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                        <button class="btn-primary" id="weekCheckBtn">Проверить план</button>
+                        <div style="margin-top:4px; font-size:11px; color:#4a754a;">Бонус +20 за правильное планирование, штрафы за перегруз и пропуск дедлайнов.</div>
+                    </div>
+                    `;
+                    container.innerHTML = html;
+
+                    document.querySelectorAll('.task-item select').forEach(select => {
+                        select.addEventListener('change', (e) => {
+                            const idx = parseInt(e.target.dataset.taskIdx);
+                            const val = parseInt(e.target.value);
+                            selectedDays[idx] = val;
+                            renderWeekPlanning();
+                        });
+                    });
+
+                    document.getElementById('weekCheckBtn')?.addEventListener('click', () => {
+                        const allAssigned = selectedDays.every(d => d > 0);
+                        if (!allAssigned) {
+                            showFeedback(false, '⚠️', 'Не все задачи распределены',
+                                'Выбери день для каждой задачи.', null);
+                            return;
+                        }
+
+                        let dayHours = new Array(7).fill(0);
+                        tasksData.forEach((task, idx) => {
+                            const day = selectedDays[idx];
+                            if (day > 0 && day <= 7) {
+                                dayHours[day - 1] += task.hours;
+                            }
+                        });
+                        const overloadedDays = dayHours.map((h, i) => ({ day: i + 1, hours: h })).filter(d => d.hours > 10);
+                        const overloadCount = overloadedDays.length;
+
+                        let deadlineViolations = 0;
+                        let violationDetails = [];
+                        tasksData.forEach((task, idx) => {
+                            const assignedDay = selectedDays[idx];
+                            if (assignedDay > task.deadline) {
+                                deadlineViolations++;
+                                const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+                                violationDetails.push(`«${task.name}» (дедлайн ${days[task.deadline - 1]}) назначена на ${days[assignedDay - 1]}`);
+                            }
+                        });
+
+                        let delta = 0;
+                        let isGood = true;
+                        let feedbackTitle = '';
+                        let feedbackDesc = '';
+                        let details = [];
+
+                        if (overloadCount === 0 && deadlineViolations === 0) {
+                            delta = 20;
+                            isGood = true;
+                            feedbackTitle = '🎉 Отличное планирование!';
+                            feedbackDesc = 'Ты отлично справился: все задачи распределены без перегрузов и с соблюдением дедлайнов. Это снижает стресс и повышает продуктивность. +20 баллов.';
+                            addHistory(`✅ Планирование недели: идеально (+20 баллов)`);
+                        } else {
+                            let penalty = 0;
+                            if (overloadCount > 0) {
+                                penalty += overloadCount * 10;
+                                details.push(`Перегруз в ${overloadCount} днях (свыше 10 ч)`);
+                            }
+                            if (deadlineViolations > 0) {
+                                penalty += deadlineViolations * 5;
+                                details.push(`${deadlineViolations} нарушений дедлайнов`);
+                            }
+                            delta = -penalty;
+                            isGood = false;
+                            feedbackTitle = `⚠️ Найдены ошибки`;
+                            feedbackDesc = `Обнаружено: ${details.join('; ')}. Снято ${penalty} баллов. Рекомендую пересмотреть распределение, чтобы избежать перегрузок и соблюдать сроки.`;
+                            addHistory(`❌ Планирование недели: ошибки (${delta} баллов)`);
+                        }
+
+                        showFeedback(isGood, isGood ? '🌟' : '⚠️', feedbackTitle, feedbackDesc, () => {
+                            addScore(delta, `Планирование недели (${overloadCount} перегрузов, ${deadlineViolations} нарушений)`, () => {
+                                state.currentScene = 'chapter7';
+                                renderScene('chapter7');
+                            });
+                        });
+                    });
+                }
+
+                renderWeekPlanning();
+                break;
+            }
+
+            // ----- СЦЕНЫ (без нумерации "Глава") -----
+            case 'chapter1':
+                container.innerHTML = `
+                    <div class="scene-card">
+                        <h2>🌅 Утро начинающего</h2>
+                        <div class="subhead">Первый шаг</div>
+                        <div class="description">Ты просыпаешься. Что выберешь?</div>
+                        <div class="options">
+                            <button class="option-btn" data-choice="good">📖 Прочитать 1 страницу книги</button>
+                            <button class="option-btn" data-choice="bad">📱 Пролистать соцсети</button>
+                        </div>
+                    </div>
+                `;
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (state.processing) return;
+                        const choice = e.currentTarget.dataset.choice;
+                        const isGood = choice === 'good';
+                        const delta = isGood ? 20 : -20;
+                        const reason = isGood ? 'чтение книги' : 'пролистывание соцсетей';
+                        const feedback = isGood ?
+                            { emoji: '📚', title: 'Отличный старт!',
+                                desc: 'Чтение даже одной страницы активирует нейронные связи, связанные с обучением. Это запускает позитивный цикл: ты чувствуешь удовлетворение, что укрепляет привычку. Постепенно это войдёт в автоматизм.' } :
+                            { emoji: '📱', title: 'Привычная ловушка',
+                                desc: 'Соцсети перегружают мозг быстрой сменой стимулов, снижая способность к глубокому фокусированию. Ты теряешь время и становишься мастером прокрастинации. Попробуй заменить это чтением – хотя бы одной страницей, чтобы не чувствовать себя виноватым.' };
+                        showFeedback(isGood, feedback.emoji, feedback.title, feedback.desc, () => {
+                            addScore(delta, reason, () => {
+                                state.currentScene = 'chapter2';
+                                renderScene('chapter2');
+                            });
+                        });
+                    });
+                });
+                break;
+            case 'chapter2':
+                container.innerHTML = `
+                    <div class="scene-card">
+                        <h2>☀️ Обычный день</h2>
+                        <div class="subhead">Второй шаг</div>
+                        <div class="description">Середина дня. Как поступишь?</div>
+                        <div class="options">
+                            <button class="option-btn" data-choice="good">⏳ Использовать "Правило двух минут"</button>
+                            <button class="option-btn" data-choice="bad">🛋️ Потратить окно на отдых без дела</button>
+                        </div>
+                    </div>
+                `;
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (state.processing) return;
+                        const choice = e.currentTarget.dataset.choice;
+                        const isGood = choice === 'good';
+                        const delta = isGood ? 15 : -15;
+                        const reason = isGood ? 'Правило двух минут' : 'отдых без дела';
+                        const feedback = isGood ?
+                            { emoji: '⏳', title: '"Правило двух минут"!',
+                                desc: 'Выполнив микро-действие, ты создаёшь инерцию, которая помогает преодолеть сопротивление. Мозг получает дофаминовое подкрепление, и следующая задача даётся легче. Это ключевой навык в формировании привычек.' } :
+                            { emoji: '🛋️', title: 'Потеря мотивации',
+                                desc: 'Отдых без конкретного занятия не восстанавливает ресурсы, а только усиливает чувство вины и апатии. Ты теряешь импульс, который мог бы использовать для движения вперёд. Запланируй маленькое действие, иначе так и будешь лежать на диване.' };
+                        showFeedback(isGood, feedback.emoji, feedback.title, feedback.desc, async () => {
+                            if (isGood) {
+                                await addItemIfMissing('timer', 'за правильный выбор');
+                            }
+                            addScore(delta, reason, () => {
+                                state.currentScene = 'matrix';
+                                renderScene('matrix');
+                            });
+                        });
+                    });
+                });
+                break;
+            case 'chapter3':
+                container.innerHTML = `
+                    <div class="scene-card">
+                        <h2>🌙 Вечер рефлексии</h2>
+                        <div class="subhead">Третий шаг</div>
+                        <div class="description">День подходит к концу. Как завершишь?</div>
+                        <div class="options">
+                            <button class="option-btn" data-choice="good">✍️ Записать маленький успех в дневник</button>
+                            <button class="option-btn" data-choice="bad">⏭️ Пропустить рефлексию</button>
+                        </div>
+                    </div>
+                `;
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (state.processing) return;
+                        const choice = e.currentTarget.dataset.choice;
+                        const isGood = choice === 'good';
+                        const delta = isGood ? 15 : -15;
+                        const reason = isGood ? 'запись успеха' : 'пропуск рефлексии';
+                        const feedback = isGood ?
+                            { emoji: '✍️', title: 'Рефлексия – ключ к росту!',
+                                desc: 'Запись успехов укрепляет чувство компетентности и позволяет замечать прогресс. Это активирует центры вознаграждения в мозге, мотивируя продолжать. Ты создаёшь позитивный цикл обратной связи.' } :
+                            { emoji: '⏭️', title: 'Упущенная возможность',
+                                desc: 'Без рефлексии ты не анализируешь свой опыт, и ошибки повторяются. Ты лишаешь себя ценной информации о том, что работает, а что нет. Небольшая запись занимает минуты, но даёт огромный выигрыш. Даже если запишешь только одно слово – уже прогресс.' };
+                        showFeedback(isGood, feedback.emoji, feedback.title, feedback.desc, async () => {
+                            if (isGood) {
+                                await addItemIfMissing('partner', 'за правильный выбор');
+                            }
+                            addScore(delta, reason, () => {
+                                state.currentScene = 'chapter4';
+                                renderScene('chapter4');
+                            });
+                        });
+                    });
+                });
+                break;
+            case 'chapter4':
+                container.innerHTML = `
+                    <div class="scene-card">
+                        <h2>🧠 Изучение нового</h2>
+                        <div class="subhead">Четвёртый шаг</div>
+                        <div class="description">Ты решил освоить новую тему. Как начнёшь?</div>
+                        <div class="options">
+                            <button class="option-btn" data-choice="good">📘 Прочитать статью по теме</button>
+                            <button class="option-btn" data-choice="bad">📺 Посмотреть развлекательное видео</button>
+                        </div>
+                    </div>
+                `;
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (state.processing) return;
+                        const choice = e.currentTarget.dataset.choice;
+                        const isGood = choice === 'good';
+                        const delta = isGood ? 10 : -10;
+                        const reason = isGood ? 'чтение статьи' : 'развлекательное видео';
+                        const feedback = isGood ?
+                            { emoji: '📘', title: 'Отличный выбор!',
+                                desc: 'Чтение структурированной информации активирует аналитические центры мозга, улучшая понимание и запоминание. Ты закладываешь фундамент, на котором можно строить новые навыки. Это инвестиция в твоё будущее.' } :
+                            { emoji: '📺', title: 'Отвлекающий фактор',
+                                desc: 'Развлекательный контент не требует когнитивных усилий и не развивает нейронные связи, важные для обучения. Ты откладываешь реальный прогресс. Попробуй заменить это на хотя бы 10 минут статьи – может, узнаешь что-то новое, кроме того, кто кого бросил.' };
+                        showFeedback(isGood, feedback.emoji, feedback.title, feedback.desc, () => {
+                            addScore(delta, reason, () => {
+                                state.currentScene = 'chapter5';
+                                renderScene('chapter5');
+                            });
+                        });
+                    });
+                });
+                break;
+            case 'chapter5':
+                container.innerHTML = `
+                    <div class="scene-card">
+                        <h2>✍️ Практика</h2>
+                        <div class="subhead">Пятый шаг</div>
+                        <div class="description">Пришло время применить знания на практике.</div>
+                        <div class="options">
+                            <button class="option-btn" data-choice="good">📝 Выполнить упражнение</button>
+                            <button class="option-btn" data-choice="bad">💬 Обсудить в чате, но не делать</button>
+                        </div>
+                    </div>
+                `;
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (state.processing) return;
+                        const choice = e.currentTarget.dataset.choice;
+                        const isGood = choice === 'good';
+                        const delta = isGood ? 10 : -10;
+                        const reason = isGood ? 'выполнение упражнения' : 'обсуждение без дела';
+                        const feedback = isGood ?
+                            { emoji: '📝', title: 'Практика – ключ к мастерству!',
+                                desc: 'Активное выполнение заданий создаёт моторные и когнитивные связи, закрепляя навык. Ты преодолеваешь разрыв между теорией и реальным действием. Это единственный способ превратить знания в умения.' } :
+                            { emoji: '💬', title: 'Без действий нет прогресса',
+                                desc: 'Обсуждение создаёт иллюзию обучения, но без практики ты не получаешь обратной связи и не формируешь автоматизм. Ты остаёшься на уровне теории, которая не применяется в жизни. Лучше сделай хотя бы одно упражнение – и тогда сможешь обсуждать с умным видом.' };
+                        showFeedback(isGood, feedback.emoji, feedback.title, feedback.desc, async () => {
+                            if (isGood) {
+                                await addItemIfMissing('tracker', 'за правильный выбор');
+                            }
+                            addScore(delta, reason, () => {
+                                state.currentScene = 'weekPlanning';
+                                renderScene('weekPlanning');
+                            });
+                        });
+                    });
+                });
+                break;
+            case 'chapter6':
+                container.innerHTML = `<div class="scene-card"><p>Эта сцена заменена на "Планирование недели".</p></div>`;
+                break;
+            case 'chapter7':
+                container.innerHTML = `
+                    <div class="scene-card">
+                        <h2>📅 Планирование</h2>
+                        <div class="subhead">Шестой шаг</div>
+                        <div class="description">Время спланировать следующий учебный день.</div>
+                        <div class="options">
+                            <button class="option-btn" data-choice="good">📋 Составить расписание на завтра</button>
+                            <button class="option-btn" data-choice="bad">⏰ Надеяться на авось</button>
+                        </div>
+                    </div>
+                `;
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (state.processing) return;
+                        const choice = e.currentTarget.dataset.choice;
+                        const isGood = choice === 'good';
+                        const delta = isGood ? 10 : -10;
+                        const reason = isGood ? 'составление расписания' : 'надежда на авось';
+                        const feedback = isGood ?
+                            { emoji: '📋', title: 'Планирование – основа успеха!',
+                                desc: 'Конкретный план действий увеличивает вероятность их выполнения в разы. Ты освобождаешь когнитивные ресурсы для самой задачи, а не для принятия решения в момент. Это привычка эффективных людей.' } :
+                            { emoji: '⏰', title: 'Отсутствие плана',
+                                desc: 'Без плана ты полагаешься на силу воли, которая быстро иссякает. Ты тратишь время на колебания и часто не делаешь то, что действительно важно. Потрать 5 минут на расписание – это сэкономит часы твоих мучений.' };
+                        showFeedback(isGood, feedback.emoji, feedback.title, feedback.desc, async () => {
+                            if (isGood) {
+                                await addItemIfMissing('diary', 'за правильный выбор');
+                            }
+                            addScore(delta, reason, () => {
+                                state.currentScene = 'final';
+                                renderScene('final');
+                            });
+                        });
+                    });
+                });
+                break;
+
+            // ----- GAME OVER -----
+            case 'gameover':
+                const showQuiz = !state.quizUsed;
+                container.innerHTML = `
+                    <div class="scene-card gameover-overlay">
+                        <h2>💔 Game Over</h2>
+                        <div class="description">Ты исчерпал баллы и все предметы.${showQuiz ? ' Но не всё потеряно! Пройди квиз по тайм-менеджменту и заработай баллы, чтобы продолжить.' : ''}</div>
+                        ${showQuiz ? `<button class="btn-quiz-yellow" id="btnQuiz">Пройти квиз</button>` : ''}
+                        <button class="btn-primary" id="btnResetGameover" style="margin-top:4px;">Начать заново</button>
+                    </div>
+                `;
+                if (showQuiz) {
+                    document.getElementById('btnQuiz')?.addEventListener('click', () => {
+                        renderQuizModal();
+                    });
+                }
+                document.getElementById('btnResetGameover')?.addEventListener('click', resetGame);
+                break;
+
+            // ----- ФИНАЛ -----
+            case 'final': {
+                const score = state.score;
+                let finalTitle = '';
+                let finalAdvice = '';
+                if (score >= 70) {
+                    finalTitle = '🏆 Мастер Малых Привычек! Ты создал систему.';
+                    finalAdvice = `Поздравляю! Ты продемонстрировал высокую сознательность и последовательность в формировании полезных привычек. Такие результаты достигаются благодаря постоянным микро-действиям, которые со временем перешли в автоматизм. Продолжай в том же духе, и ты сможешь применить этот подход к любым сферам жизни. Помни: каждый новый навык начинается с маленького шага. И не забывай хвалить себя – даже если это просто чашка кофе за прочитанную страницу.`;
+                } else if (score >= 40) {
+                    finalTitle = '📈 Ученик на пути. Продолжай в том же духе!';
+                    finalAdvice = `Ты уже на верном пути. Ты осознаёшь важность привычек и делаешь шаги в правильном направлении. Чтобы выйти на новый уровень, сосредоточься на последовательности – даже в дни с низкой мотивацией старайся выполнять хотя бы самое маленькое действие. Это укрепит нейронные связи и сделает привычку устойчивой. Не останавливайся! И помни: даже если сегодня ты прокрастинировал, завтра новый день.`;
+                } else {
+                    finalTitle = '🌬️ Ветер перемен. Попробуй ещё раз, чтобы укрепить привычки.';
+                    finalAdvice = `Не расстраивайся! Формирование привычек – это процесс, требующий времени и терпения. Ошибки и откаты – нормальная часть пути. Проанализируй, какие ситуации вызывали у тебя трудности, и попробуй снова, начиная с ещё более маленьких шагов. Каждый новый старт – это опыт, который приближает к цели. Ты сможешь! Главное – не сравнивай себя с теми, кто уже на финише, а радуйся своим маленьким победам.`;
+                }
+                container.innerHTML = `
+                    <div class="scene-card">
+                        <h2>🏁 Финал</h2>
+                        <div class="result-banner"><span>⭐</span> ${finalTitle}</div>
+                        <div class="final-advice">${finalAdvice}</div>
+                        <div class="description">Итоговые баллы: ${score}</div>
+                        <button class="btn-primary" id="btnCollect">📒 Выбрать техники в блокнот</button>
+                        <button class="btn-primary" id="btnReset" style="background:#8d8d8d; box-shadow:0 4px 0 #6a6a6a;">Пройти заново</button>
+                    </div>
+                `;
+                document.getElementById('btnCollect')?.addEventListener('click', () => {
+                    state.currentScene = 'collect';
+                    renderScene('collect');
+                });
+                document.getElementById('btnReset')?.addEventListener('click', resetGame);
+                addHistory(`🏁 Финал: ${finalTitle} (баллы: ${score})`);
+                break;
+            }
+
+            /* ---------- Блокнот техник ---------- */
+            case 'collect': {
+                const techIds = ['timer', 'tracker', 'diary', 'partner', 'matrix'];
+                const techs = techIds.map(id => ITEMS[id]);
+
+                function renderCollect() {
+                    const addedIds = state.inventory.map(i => i.id);
+                    let html = `
+                        <div class="scene-card">
+                            <h2>📒 Блокнот техник</h2>
+                            <div class="subhead">Перетащи понравившиеся техники в свой блокнот</div>
+                            <div class="description">Наведи на технику, чтобы увидеть подсказку. Перетащи её в блокнот, чтобы сохранить. Блокнот можно очистить. <br><strong>Правый клик</strong> по технике – покажет краткую информацию.</div>
+                            <div class="collect-container">
+                                <div style="display:flex; flex-wrap:wrap; gap:4px; justify-content:center;">
+                    `;
+                    techs.forEach(tech => {
+                        const alreadyAdded = addedIds.includes(tech.id);
+                        html += `
+                            <div class="collect-tech-item ${alreadyAdded ? 'added' : ''}" 
+                                 draggable="${!alreadyAdded}" 
+                                 data-tech-id="${tech.id}"
+                                 style="${alreadyAdded ? 'cursor:default;' : ''}">
+                                <span class="tech-emoji">${tech.emoji}</span>
+                                <span class="tech-name">${tech.name}</span>
+                                <span class="tech-tip">${tech.desc}</span>
+                                ${alreadyAdded ? ' ✅' : ''}
+                            </div>
+                        `;
+                    });
+                    html += `
+                                </div>
+                                <div style="font-weight:600; margin-top:4px; font-size:12px;">📓 Мой блокнот (перетащи сюда, правый клик для инфо):</div>
+                                <div class="collect-notebook" id="notebookDrop">
+                    `;
+                    if (addedIds.length === 0) {
+                        html += `<span class="placeholder">Перетащи сюда техники, которые хочешь забрать</span>`;
+                    } else {
+                        addedIds.forEach(id => {
+                            const item = ITEMS[id];
+                            html += `<span class="notebook-item" data-tech-id="${id}"><span class="nb-emoji">${item.emoji}</span> ${item.name}</span>`;
+                        });
+                    }
+                    html += `
+                                </div>
+                                <div class="collect-actions">
+                                    <button class="btn-primary" id="collectFinish">Завершить</button>
+                                    <button class="btn-primary btn-clear" id="collectClear">Очистить блокнот</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML = html;
+
+                    // Правый клик для всех элементов
+                    document.querySelectorAll('.collect-tech-item').forEach(el => {
+                        el.addEventListener('contextmenu', (e) => {
+                            e.preventDefault();
+                            const techId = el.dataset.techId;
+                            if (techId) {
+                                showTechInfoModal(techId);
+                            }
+                        });
+                    });
+                    document.querySelectorAll('.notebook-item').forEach(el => {
+                        el.addEventListener('contextmenu', (e) => {
+                            e.preventDefault();
+                            const techId = el.dataset.techId;
+                            if (techId) {
+                                showTechInfoModal(techId);
+                            }
+                        });
+                    });
+
+                    // Drag-and-drop
+                    const techElements = document.querySelectorAll('.collect-tech-item:not(.added)');
+                    const notebook = document.getElementById('notebookDrop');
+
+                    techElements.forEach(el => {
+                        el.addEventListener('dragstart', (e) => {
+                            e.dataTransfer.setData('text/plain', el.dataset.techId);
+                            el.classList.add('dragging');
+                        });
+                        el.addEventListener('dragend', (e) => {
+                            el.classList.remove('dragging');
+                        });
+                    });
+
+                    notebook.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        notebook.classList.add('drag-over');
+                    });
+                    notebook.addEventListener('dragleave', (e) => {
+                        notebook.classList.remove('drag-over');
+                    });
+                    notebook.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        notebook.classList.remove('drag-over');
+                        const techId = e.dataTransfer.getData('text/plain');
+                        if (!techId) return;
+                        if (state.inventory.find(i => i.id === techId)) {
+                            showFeedback(false, '⚠️', 'Уже есть',
+                                `Техника ${ITEMS[techId].emoji} ${ITEMS[techId].name} уже в блокноте.`, null);
+                            return;
+                        }
+                        addItemToNotebook(techId);
+                        renderCollect();
+                        const toast = document.createElement('div');
+                        toast.className = 'item-toast';
+                        toast.innerHTML = `📒 Добавлено в блокнот: ${ITEMS[techId].emoji} ${ITEMS[techId].name}`;
+                        document.body.appendChild(toast);
+                        setTimeout(() => toast.remove(), 2000);
+                    });
+
+                    document.getElementById('collectFinish')?.addEventListener('click', () => {
+                        // Закрываем страницу (если браузер позволяет)
+                        window.close();
+                        // Если не закрылось, перенаправляем на пустую страницу
+                        if (!window.closed) {
+                            window.location.href = 'about:blank';
+                        }
+                    });
+
+                    document.getElementById('collectClear')?.addEventListener('click', () => {
+                        state.inventory = [];
+                        updateUI();
+                        renderCollect();
+                        addHistory(`🧹 Блокнот очищен`);
+                        const toast = document.createElement('div');
+                        toast.className = 'item-toast';
+                        toast.innerHTML = `🧹 Блокнот очищен`;
+                        document.body.appendChild(toast);
+                        setTimeout(() => toast.remove(), 2000);
+                    });
+                }
+
+                renderCollect();
+                break;
+            }
+
+            default:
+                container.innerHTML = `<div class="scene-card"><p>Неизвестный экран</p></div>`;
+        }
+        updateUI();
+    }
+
+    // Очистка журнала
+    document.getElementById('clearLogBtn')?.addEventListener('click', () => {
+        state.history = [];
+        renderLog();
+    });
+
+    // ---------- СТАРТ ----------
+    resetGame();
+</script>
+</body>
+</html>
